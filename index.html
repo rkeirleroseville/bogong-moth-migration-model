@@ -160,7 +160,7 @@ function renderLog(){
   const total=h.reports.northern+h.reports.centralwest+h.reports.sydney+h.reports.snowy+h.reports.victorian;
   const vals=[i+1,labels.rainfall[h.r],labels.temperature[h.t],labels.wind[h.w],labels.light[h.l],formatN(h.population),h.reach+'%',h.arrival,h.reports.northern,h.reports.centralwest,h.reports.sydney,h.reports.snowy,h.reports.victorian,total];
   const tr=document.createElement('tr');
-  vals.forEach((v,idx)=>{const td=document.createElement('td');if([5,6,8,9,10,11,12,13].includes(idx))td.className='num';td.textContent=v;tr.appendChild(td});
+  vals.forEach((v,idx)=>{const td=document.createElement('td');if([5,6,8,9,10,11,12,13].includes(idx))td.className='num';td.textContent=v;tr.appendChild(td);});
   logBody.appendChild(tr);
  });
  runCount.textContent=history.length+(history.length===1?' run recorded':' runs recorded');
