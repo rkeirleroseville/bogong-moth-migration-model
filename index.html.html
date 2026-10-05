@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bogong Moth Migration Model</title>
+<style>
+:root{--bg:#f7f7f4;--card:#fff;--panel:#f1f2ed;--text:#1f2923;--muted:#66716a;--border:#d8ddd8;--accent:#356b4b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;line-height:1.35}
+main{max-width:1180px;margin:0 auto;padding:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.panel{background:var(--panel);border-radius:10px;padding:12px}
+h1{font-size:28px;margin:0 0 8px} h2{font-size:19px;margin:0 0 4px}
+.small{font-size:14px;color:var(--muted)}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+label.panel span{display:block;font-weight:700;margin-bottom:6px}
+select,button{font:inherit}
+select{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:white;color:var(--text)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+button{min-height:44px;padding:9px 14px;border-radius:8px;border:1px solid var(--border);background:white;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:white;font-weight:700}
+button:disabled{opacity:.6;cursor:not-allowed}
+.results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+.metric{background:var(--panel);padding:12px;border-radius:10px}
+.metric b{display:block;font-size:24px;margin-top:4px}
+.map-wrap{border:1px solid var(--border);border-radius:10px;background:var(--panel);overflow:hidden;padding:6px}
+svg{display:block;width:100%;height:auto}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin-top:10px}
+table{border-collapse:collapse;min-width:1740px;width:100%;font-size:13px;background:white}
+th,td{padding:8px 10px;border-top:1px solid var(--border);vertical-align:middle}
+thead th{background:var(--panel);border-top:none} th{text-align:left} .num{text-align:right} .center{text-align:center}
+.hidden{display:none} #status{margin-top:8px}
+@media(max-width:700px){main{padding:10px}.controls{grid-template-columns:1fr}.results-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<section class="card">
+<h1>Bogong Moth Migration Model</h1>
+<p><b>This computer model is a simplified representation of factors that can affect Bogong moth migration.</b></p>
+<p class="small">Each run represents one complete migration season. Reported sightings are the total reports recorded across that simulated season.</p>
+</section>
+
+<section class="card">
+<h2>Environmental conditions</h2>
+<p class="small">Choose conditions, then run the migration season.</p>
+<div class="controls">
+<label class="panel"><span>Breeding-area rainfall</span><select id="rainfall"><option value="low">Low</option><option value="average" selected>Average</option><option value="high">High</option></select></label>
+<label class="panel"><span>Average temperature during Spring</span><select id="temperature"><option value="cool">Cool</option><option value="average" selected>Average</option><option value="warm">Warm</option></select></label>
+<label class="panel"><span>Wind direction</span><select id="wind"><option value="northwest">From North-West → toward South-East</option><option value="west" selected>From West → toward East</option><option value="southeast">From South-East → toward North-West</option></select></label>
+<label class="panel"><span>City light levels</span><select id="light"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+</div>
+<div class="actions"><button id="runBtn" class="primary">Run migration season</button><button id="clearBtn">Clear results</button></div>
+<div id="status" class="small"></div>
+</section>
+
+<section class="card">
+<h2>Migration results</h2>
+<div id="emptyState" class="panel small" style="margin-top:10px;text-align:center">Run a migration season to generate results.</div>
+<div id="resultState" class="hidden">
+<div class="results-grid">
+<div class="metric"><span class="small">Estimated number of moths migrating</span><b id="populationOut"></b></div>
+<div class="metric"><span class="small">Reached mountain resting sites</span><b id="reachOut"></b></div>
+<div class="metric"><span class="small">First arrival in mountain resting sites</span><b id="arrivalOut"></b></div>
+</div>
+<h2 style="margin-top:4px">Reported sightings during the simulated migration season</h2>
+<p class="small">More moth symbols indicate more reported sightings. Exact report numbers are shown beside each location.</p>
+<div class="map-wrap">
+<svg id="mapSvg" viewBox="0 0 760 500" aria-label="Map of mainland south-eastern Australia showing Bogong moth reports in five locations">
+<defs>
+<symbol id="mothSymbol" viewBox="-34 -27 68 58">
+<path d="M-2,-18 C-7,-16 -17,-6 -29,17 Q-30,22 -24,24 Q-12,22 -2,14 Z" fill="#67432b" stroke="#402a1e" stroke-width="1.6"/>
+<path d="M2,-18 C7,-16 17,-6 29,17 Q30,22 24,24 Q12,22 2,14 Z" fill="#67432b" stroke="#402a1e" stroke-width="1.6"/>
+<path d="M-2,-17 Q0,-22 2,-17 L4,14 Q0,20 -4,14 Z" fill="#32231b"/><circle cx="0" cy="-19" r="3.5" fill="#2d2019"/>
+<path d="M-1,-21 Q-7,-27 -11,-25 M1,-21 Q7,-27 11,-25" fill="none" stroke="#2d2019" stroke-width="1.4" stroke-linecap="round"/>
+</symbol>
+<symbol id="mountainSymbol" viewBox="0 0 48 30"><path d="M2,27 L16,8 L25,19 L33,10 L46,27 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" opacity=".5"/></symbol>
+</defs>
+<path d="M -536.8,210.6 L -584.8,228.5 L -624.0,236.6 L -632.7,254.9 L -649.5,269.2 L -687.9,270.0 L -716.3,273.1 L -756.3,266.7 L -819.9,272.2 L -846.9,290.8 L -860.1,289.2 L -904.5,310.3 L -967.9,308.9 L -1015.9,286.5 L -1040.3,279.9 L -1039.3,259.8 L -1016.8,255.1 L -1009.1,247.1 L -1010.7,234.5 L -1005.2,210.2 L -1010.3,189.4 L -1034.2,154.1 L -1041.6,134.1 L -1039.7,114.1 L -1057.7,91.4 L -1058.8,81.1 L -1078.9,67.1 L -1084.5,39.7 L -1110.4,12.0 L -1116.7,-2.9 L -1096.8,12.2 L -1112.1,-20.3 L -1089.6,-10.1 L -1076.2,3.4 L -1077.0,-14.5 L -1099.4,-42.0 L -1103.7,-53.1 L -1114.2,-63.5 L -1109.3,-83.8 L -1100.0,-92.4 L -1093.8,-109.9 L -1098.7,-130.4 L -1080.0,-155.5 L -1076.6,-128.9 L -1057.4,-153.0 L -1020.7,-164.7 L -998.6,-179.6 L -964.0,-192.4 L -943.4,-195.2 L -931.0,-190.9 L -895.3,-203.9 L -867.8,-207.8 L -861.0,-215.5 L -849.0,-218.6 L -824.0,-217.8 L -776.4,-228.1 L -751.8,-243.6 L -740.2,-262.3 L -713.7,-280.1 L -710.4,-313.1 L -678.8,-342.8 L -659.7,-312.6 L -640.4,-319.6 L -656.5,-336.1 L -642.3,-353.1 L -622.4,-345.5 L -616.9,-372.2 L -592.1,-389.4 L -581.2,-403.2 L -558.4,-409.1 L -557.7,-418.9 L -537.8,-414.8 L -537.0,-423.6 L -495.3,-433.4 L -461.8,-417.3 L -436.7,-396.6 L -408.4,-396.3 L -379.6,-393.1 L -389.2,-412.3 L -367.5,-440.3 L -347.1,-449.5 L -354.1,-458.2 L -334.5,-478.2 L -307.0,-490.6 L -283.9,-486.4 L -245.8,-493.0 L -246.7,-510.9 L -279.8,-522.4 L -255.7,-527.5 L -225.7,-518.8 L -201.7,-504.5 L -163.6,-495.5 L -150.6,-499.1 L -122.6,-488.3 L -96.1,-498.3 L -79.1,-495.3 L -68.5,-502.0 L -47.7,-484.7 L -59.8,-465.9 L -77.0,-451.8 L -92.5,-450.6 L -87.3,-436.7 L -116.7,-402.0 L -113.4,-392.1 L -77.4,-372.7 L -42.6,-361.5 L -19.3,-349.5 L 13.5,-328.7 L 26.2,-328.8 L 49.9,-319.8 L 56.8,-309.0 L 100.0,-297.1 L 129.9,-309.1 L 147.9,-343.4 L 153.6,-362.6 L 167.3,-390.4 L 161.0,-407.4 L 164.3,-417.5 L 159.1,-437.6 L 165.0,-463.9 L 173.7,-471.0 L 166.6,-482.7 L 186.2,-520.5 L 187.3,-530.5 L 204.1,-543.6 L 216.9,-526.5 L 220.0,-504.5 L 231.3,-500.3 L 233.3,-485.6 L 249.7,-467.8 L 253.1,-448.0 L 251.5,-435.3 L 267.8,-407.8 L 296.9,-421.0 L 311.9,-406.2 L 333.6,-392.5 L 328.9,-377.0 L 338.6,-347.0 L 345.5,-329.5 L 356.9,-325.3 L 369.1,-295.3 L 364.8,-277.2 L 379.4,-253.5 L 428.5,-235.2 L 490.8,-203.3 L 484.9,-194.8 L 510.8,-172.9 L 528.4,-135.0 L 546.5,-142.7 L 564.8,-127.5 L 575.9,-132.9 L 583.7,-95.8 L 636.8,-61.0 L 672.2,-32.6 L 684.9,-4.5 L 686.1,15.4 L 683.0,37.1 L 704.6,66.9 L 702.0,97.8 L 681.9,145.3 L 682.8,165.3 L 673.9,190.4 L 653.9,222.3 L 620.3,239.4 L 603.8,266.6 L 588.7,283.9 L 575.3,314.1 L 557.8,331.5 L 546.4,357.7 L 540.5,381.8 L 542.9,392.9 L 516.9,405.0 L 466.2,406.3 L 424.4,420.7 L 376.3,449.3 L 338.8,433.8 L 311.1,427.6 L 318.1,409.4 L 293.3,416.0 L 253.7,441.3 L 188.9,426.3 L 163.0,423.8 L 119.2,413.7 L 89.9,392.1 L 81.5,365.5 L 71.0,347.8 L 48.7,333.6 L 5.2,329.4 L 20.1,312.5 L 9.1,286.5 L -13.0,310.7 L -53.3,317.1 L -29.6,297.8 L -22.7,277.6 L -5.2,260.4 L -8.9,234.5 L -45.7,264.3 L -74.0,276.3 L -91.3,304.2 L -126.7,289.8 L -125.3,271.2 L -153.6,245.8 L -177.5,232.7 L -169.0,224.6 L -227.0,203.4 L -258.9,202.4 L -302.4,185.4 L -383.4,188.7 L -493.6,212.9 L -536.8,210.6 Z" fill="#fff" stroke="#47554d" stroke-width="2" stroke-opacity=".65"/>
+<path d="M 135.5,98.0 L 271.4,98.0 L 407.2,98.0 L 497.7,101.5 L 570.1,91.0 L 633.5,80.5 L 699.2,70.0" fill="none" stroke="#66716a" stroke-opacity=".45" stroke-width="1.15"/>
+<path d="M 135.5,98.0 L 135.5,273.0" fill="none" stroke="#66716a" stroke-opacity=".45" stroke-width="1.15"/>
+<path d="M 135.5,273.0 L 135.5,413.0" fill="none" stroke="#66716a" stroke-opacity=".45" stroke-width="1.15"/>
+<path d="M 135.5,273.0 L 189.9,283.5 L 248.7,315.0 L 316.6,332.5 L 384.5,343.0 L 452.4,343.0 L 502.2,364.0 L 538.4,395.5" fill="none" stroke="#66716a" stroke-opacity=".45" stroke-width="1.15"/>
+<text x="321.1" y="68.2" font-size="17" font-weight="700" text-anchor="middle" fill="#66716a" opacity=".30">QLD</text>
+<text x="307.6" y="210.0" font-size="17" font-weight="700" text-anchor="middle" fill="#66716a" opacity=".30">NSW</text>
+<text x="284.9" y="383.2" font-size="17" font-weight="700" text-anchor="middle" fill="#66716a" opacity=".30">VIC</text>
+<text x="117.4" y="252.0" font-size="17" font-weight="700" text-anchor="middle" fill="#66716a" opacity=".30">SA</text>
+<use href="#mountainSymbol" x="453.8" y="316.8" width="38" height="24"></use>
+<use href="#mountainSymbol" x="401.7" y="348.2" width="38" height="24"></use>
+<g id="animationLayer"></g><g id="locationMarks"></g>
+</svg>
+</div>
+</div>
+</section>
+
+<section class="card">
+<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h2>Data log</h2><span id="runCount" class="small">0 runs recorded</span></div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th rowspan="2">Run</th><th rowspan="2">Breeding-area rainfall</th><th rowspan="2">Average temperature during Spring</th><th rowspan="2">Wind direction</th><th rowspan="2">City light levels</th>
+<th rowspan="2" class="num">Estimated number of moths migrating</th><th rowspan="2" class="num">Reached mountain resting sites</th><th rowspan="2">First arrival in mountain resting sites</th>
+<th colspan="6" class="center">Reported sightings by location</th></tr>
+<tr><th class="num">Northern NSW</th><th class="num">Central-West NSW</th><th class="num">Sydney</th><th class="num">Snowy Mountains</th><th class="num">Victorian Mountains</th><th class="num">Total reported sightings</th></tr>
+</thead><tbody id="logBody"></tbody>
+</table>
+</div>
+</section>
+</main>
+
+<script>
+const rainfall=document.getElementById('rainfall'),temperature=document.getElementById('temperature'),wind=document.getElementById('wind'),light=document.getElementById('light');
+const runBtn=document.getElementById('runBtn'),clearBtn=document.getElementById('clearBtn'),emptyState=document.getElementById('emptyState'),resultState=document.getElementById('resultState');
+const populationOut=document.getElementById('populationOut'),reachOut=document.getElementById('reachOut'),arrivalOut=document.getElementById('arrivalOut'),logBody=document.getElementById('logBody'),runCount=document.getElementById('runCount'),status=document.getElementById('status'),animationLayer=document.getElementById('animationLayer'),locationMarks=document.getElementById('locationMarks');
+const labels={rainfall:{low:'Low',average:'Average',high:'High'},temperature:{cool:'Cool',average:'Average',warm:'Warm'},wind:{northwest:'From North-West → toward South-East',west:'From West → toward East',southeast:'From South-East → toward North-West'},light:{low:'Low',medium:'Medium',high:'High'}};
+const locations=[
+{key:'northern',name:'Northern NSW',coord:[150.6,-29.5],box:[600,92]},
+{key:'centralwest',name:'Central-West NSW',coord:[147.2,-32.7],box:[125,195]},
+{key:'sydney',name:'Sydney',coord:[151.2093,-33.8688],box:[545,235]},
+{key:'snowy',name:'Snowy Mountains',coord:[148.45,-36.25],box:[565,350]},
+{key:'victorian',name:'Victorian Mountains',coord:[147.3,-37.15],box:[145,416]}
+];
+const windShares={northwest:{northern:.08,centralwest:.15,sydney:.16,snowy:.37,victorian:.24},west:{northern:.08,centralwest:.13,sydney:.34,snowy:.25,victorian:.20},southeast:{northern:.17,centralwest:.28,sydney:.12,snowy:.25,victorian:.18}};
+let history=[],animationFrame=null;
+const NS='http://www.w3.org/2000/svg',rand=(a,b)=>a+Math.random()*(b-a),jitter=p=>1+rand(-p,p),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),formatN=n=>Math.round(n).toLocaleString('en-AU');
+function project(lon,lat){return [45.0+(lon-139.0)/(14.800000000000011)*(670.0),28.0+(-27.0-lat)/(12.0)*(420.0)]}
+function formatDate(offset){const d=new Date(Date.UTC(2026,9,12+offset));return new Intl.DateTimeFormat('en-AU',{day:'numeric',month:'short',timeZone:'UTC'}).format(d)}
+function pictogramCount(v){if(v<100)return 1;if(v<175)return 2;if(v<250)return 3;if(v<350)return 4;return 5}
+function makeResult(){
+ const r=rainfall.value,t=temperature.value,w=wind.value,l=light.value;
+ const population=Math.round(800000*({low:.6,average:1,high:1.3}[r])*jitter(.05));
+ let reach=72+({northwest:7,west:-2,southeast:-8}[w])+({low:2,medium:0,high:-4}[l])+rand(-3,3);reach=Math.round(clamp(reach,45,90));
+ const arrival=formatDate(Math.round(({cool:7,average:0,warm:-7}[t])+({northwest:-2,west:0,southeast:3}[w])+rand(-2,2)));
+ const base=population/1000,shares=windShares[w],reports={};
+ locations.forEach(loc=>{let v=base*shares[loc.key];if(loc.key==='sydney')v*=({low:.7,medium:1,high:1.6}[l]);reports[loc.key]=Math.max(0,Math.round(v*jitter(.1)))});
+ return{r,t,w,l,population,reach,arrival,reports};
+}
+function drawPictogram(x,y,count){
+ const layouts={1:[[0,0]],2:[[-10,0],[10,0]],3:[[-11,7],[11,7],[0,-10]],4:[[-10,-9],[10,-9],[-10,9],[10,9]],5:[[-12,-10],[12,-10],[-12,10],[12,10],[0,0]]};
+ layouts[count].forEach(([dx,dy])=>{const u=document.createElementNS(NS,'use');u.setAttribute('href','#mothSymbol');u.setAttribute('x',x+dx-7);u.setAttribute('y',y+dy-6);u.setAttribute('width','14');u.setAttribute('height','12');locationMarks.appendChild(u)});
+}
+function renderResult(h){
+ emptyState.classList.add('hidden');resultState.classList.remove('hidden');populationOut.textContent=formatN(h.population);reachOut.textContent=h.reach+'%';arrivalOut.textContent=h.arrival;locationMarks.innerHTML='';
+ locations.forEach(loc=>{
+  const value=h.reports[loc.key],[x,y]=project(...loc.coord),count=pictogramCount(value);let [bx,by]=loc.box;
+  const width=Math.max(118,loc.name.length*6.5+24);
+  const left=bx-5,right=left+width,top=by-15,bottom=by+19;
+  if(right>x-28&&left<x+28&&bottom>y-24&&top<y+24){bx=Math.min(620,x+55);by=y}
+  const line=document.createElementNS(NS,'line');line.setAttribute('x1',x);line.setAttribute('y1',y);line.setAttribute('x2',bx);line.setAttribute('y2',by);line.setAttribute('stroke','#66716a');line.setAttribute('stroke-opacity','.35');locationMarks.appendChild(line);
+  drawPictogram(x,y,count);
+  const bg=document.createElementNS(NS,'rect');bg.setAttribute('x',bx-5);bg.setAttribute('y',by-15);bg.setAttribute('width',width);bg.setAttribute('height','34');bg.setAttribute('rx','5');bg.setAttribute('fill','#f1f2ed');bg.setAttribute('fill-opacity','.97');locationMarks.appendChild(bg);
+  const label=document.createElementNS(NS,'text');label.setAttribute('x',bx);label.setAttribute('y',by-2);label.setAttribute('font-size','12');label.setAttribute('font-weight','700');label.setAttribute('fill','#1f2923');label.textContent=loc.name;locationMarks.appendChild(label);
+  const n=document.createElementNS(NS,'text');n.setAttribute('x',bx);n.setAttribute('y',by+13);n.setAttribute('font-size','12');n.setAttribute('fill','#66716a');n.textContent=value+' reported sightings';locationMarks.appendChild(n);
+ });
+}
+function renderLog(){
+ logBody.innerHTML='';
+ history.forEach((h,i)=>{
+  const total=h.reports.northern+h.reports.centralwest+h.reports.sydney+h.reports.snowy+h.reports.victorian;
+  const vals=[i+1,labels.rainfall[h.r],labels.temperature[h.t],labels.wind[h.w],labels.light[h.l],formatN(h.population),h.reach+'%',h.arrival,h.reports.northern,h.reports.centralwest,h.reports.sydney,h.reports.snowy,h.reports.victorian,total];
+  const tr=document.createElement('tr');
+  vals.forEach((v,idx)=>{const td=document.createElement('td');if([5,6,8,9,10,11,12,13].includes(idx))td.className='num';td.textContent=v;tr.appendChild(td});
+  logBody.appendChild(tr);
+ });
+ runCount.textContent=history.length+(history.length===1?' run recorded':' runs recorded');
+}
+function animateMigration(done){
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){done();return}
+ if(animationFrame)cancelAnimationFrame(animationFrame);animationLayer.innerHTML='';
+ const routes=[[[146.2,-31],[148.45,-36.25]],[[148.1,-30.4],[148.45,-36.25]],[[145.4,-32.4],[147.3,-37.15]],[[149.5,-30.7],[148.45,-36.25]],[[146.5,-31.7],[147.3,-37.15]]];
+ const parts=routes.map((r,i)=>{const u=document.createElementNS(NS,'use');u.setAttribute('href','#mothSymbol');u.setAttribute('width','12');u.setAttribute('height','10');animationLayer.appendChild(u);return{u,a:project(...r[0]),b:project(...r[1]),delay:i*.06}});
+ const start=performance.now(),duration=850;
+ function frame(now){const p=(now-start)/duration;parts.forEach(o=>{const q=clamp((p-o.delay)/(1-o.delay),0,1),e=q*q*(3-2*q),x=o.a[0]+(o.b[0]-o.a[0])*e,y=o.a[1]+(o.b[1]-o.a[1])*e;o.u.setAttribute('x',x-6);o.u.setAttribute('y',y-5);o.u.setAttribute('opacity',q>=1?'0':'.75')});if(p<1)animationFrame=requestAnimationFrame(frame);else{animationLayer.innerHTML='';animationFrame=null;done()}}
+ animationFrame=requestAnimationFrame(frame);
+}
+runBtn.addEventListener('click',()=>{status.textContent='';runBtn.disabled=true;runBtn.textContent='Migrating…';animateMigration(()=>{const h=makeResult();history.push(h);renderResult(h);renderLog();runBtn.disabled=false;runBtn.textContent='Run migration season'})});
+clearBtn.addEventListener('click',()=>{if(animationFrame)cancelAnimationFrame(animationFrame);animationFrame=null;animationLayer.innerHTML='';history=[];renderLog();locationMarks.innerHTML='';resultState.classList.add('hidden');emptyState.classList.remove('hidden');status.textContent='Results cleared.';runBtn.disabled=false;runBtn.textContent='Run migration season'});
+</script>
+</body></html>
